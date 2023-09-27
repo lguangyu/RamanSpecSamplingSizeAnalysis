@@ -90,6 +90,33 @@ divergence change at the sampling depth, or do a further analysis of the point
 of convergence using a user-specified threshold.
 
 
+## 4. POC plot
+
+This is an example of finding and plotting POC using user-specified threshod(s).
+
+```bash
+python ./script/kdiv_plot_poc.py \
+	-m conservative \
+	-t "0.001,0.005,0.01" \
+	-p sim_out.kdiv.n_3.png \
+	--dpi 300 \
+	sim_out.kdiv.n_3.tsv
+```
+
+Here we used three thresholds, 0.001, 0.005 and 0.01, and use the conservative
+way to estimate POC. The result will show that POC<sub>0.001</sub> = N/A meaning
+that the sample size=200 is insufficient at this threshold level.
+POC<sub>0.005</sub> = 195. However it's almost at the size of the assessed
+dataset, suggesting that this POC is not reliable. Therefore sample size=200 is
+still insufficient at the threshold level of 0.005. Finally, the sample size is
+sufficient at the threshold level of 0.01 for a reliable
+POC<sub>0.01</sub> = 150.
+
+Note that in the original paper, the POCs are estimated using the 'standard'
+method instead of 'convervative' which is shown here. When using 'standard' POC
+estimation, the conclusion is sufficient at the threshold level of 0.005.
+
+
 # Publication
 
 If you used this method in your research, please site our original paper:
