@@ -2,6 +2,7 @@
 
 import argparse
 import functools
+import importlib
 import io
 import json
 import numpy
@@ -26,6 +27,15 @@ class PositiveInt(int):
 		new = super().__new__(cls, *ka, **kw)
 		if new <= 0:
 			raise ValueError("PositiveInt cannot be %d" % new)
+		return new
+
+
+class NonNegativeInt(int):
+	@functools.wraps(int.__new__)
+	def __new__(cls, *ka, **kw):
+		new = super().__new__(cls, *ka, **kw)
+		if new < 0:
+			raise ValueError("NonNegativeInt cannot be %d" % new)
 		return new
 
 
@@ -56,6 +66,9 @@ def get_args():
 		help="input dataset to run kernel divergence sampling simulation; "
 			"the input should be a plain data matrix with each row as a sample "
 			"(data point), and in plain txt format (default: read from stdin)")
+	ap.add_argument("--skip-lines", type=NonNegativeInt, default=0,
+		metavar="int",
+		help="skip first <int> lines in the input file (default: 0)")
 	ap.add_argument("-d", "--delimiter", type=Char, metavar="char",
 		default=dfl_delimiter,
 		help="delimiter in input dataset file (default: <tab>) ")
@@ -79,6 +92,8 @@ def get_args():
 	ap.add_argument("-r", "--num-repeats", type=PositiveInt, metavar="int",
 		default=dfl_num_repeats,
 		help="the number of simulation repeats (default: 1000)")
+	ap.add_argument("--progress", action="store_true",
+		help="show progressive bar (default: no)")
 	# parse and refine args
 	args = ap.parse_args()
 	if args.input == "-":
@@ -88,9 +103,29 @@ def get_args():
 	return args
 
 
-def load_dataset(file, delimiter):
+def load_dataset(file, *, delimiter: str = "\t", skip_lines: int = 0):
 	# file can be either fp or str, passed to numpy.loadtxt()
-	return numpy.loadtxt(file, dtype=float, delimiter=delimiter)
+	return numpy.loadtxt(file, dtype=float, delimiter=delimiter,
+		skiprows=skip_lines)
+
+
+def progress_range(*ka, progress=False):
+	"""
+	range with progress bar support from module tqdm
+	tqdm will be imported only if invoked with progress=True
+
+	*ka: arguments forwarded to conventional range() call
+	"""
+	if progress:
+		try:
+			tqdm = importlib.import_module("tqdm")
+			return tqdm.tqdm(range(*ka))
+		except ModuleNotFoundError:
+			print("option '--progress' requires tqdm module", file=sys.stderr)
+			sys.exit(1)
+	else:
+		return range(*ka)
+	return
 
 
 def get_simulation_depth_list(dp_min, dp_max, dp_size):
@@ -167,7 +202,8 @@ def simulation_per_round_with_permutation(data_mat, depth_list) -> (list, list):
 
 def main():
 	args = get_args()
-	dataset = load_dataset(args.input, args.delimiter)
+	dataset = load_dataset(args.input, delimiter=args.delimiter,
+		skip_lines=args.skip_lines)
 	depth_list = get_simulation_depth_list(
 		dp_min=args.depth_min,
 		dp_max=(len(dataset) if args.depth_max is None else args.depth_max),
@@ -175,7 +211,7 @@ def main():
 	# simulation
 	permu_index_list = list()
 	eigvals_res_list = list()
-	for i in range(args.num_repeats):
+	for i in progress_range(args.num_repeats, progress=args.progress):
 		permu, eigvals = simulation_per_round_with_permutation(dataset,
 			depth_list)
 		permu_index_list.append(permu)

@@ -11,11 +11,12 @@ This library requires `python>=3.6`, with package dependencies:
 
 * numpy
 * scikit-learn
+* tqdm (optional)
 
 To instal the dependencies, run the command below in terminal:
 
 ```bash
-pip install numpy scikit-learn
+pip install numpy scikit-learn tqdm
 ```
 
 ## Install scripts
@@ -50,15 +51,18 @@ python ./script/kdiv_sampling.py \
 	--depth-max 200 \
 	-r 1000 \
 	-o sim_out.json \
+	--progress \
 	doc/k4normal.n_200.tsv
 ```
 
 The command above takes the aforementioned example data as input, then runs 1000
 repeats of sampling simulation, with batch size of 5, throughout the sampling
-depth from 5 to 200. It's result output will be saved in sim_out.json. This step
+depth from 5 to 200. Its result output will be saved in sim_out.json. This step
 may take a while based on the batch size, sampling depth range and number of
 repeats so please be patient. The results are in json format, stores the
 eigenvalues acquired at each sampling depth at each repeat of simulation.
+The `--progress` option will show a progress bar (requires module `tqdm`) when
+running this script from terminal.
 
 
 ## 3. Kernel divergence analysis
